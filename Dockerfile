@@ -51,14 +51,21 @@ RUN cd /home/craft/evaluation && \
 # copy coreference scripts to the container
 USER root
 COPY evaluation/coreference/scripts/run-coref-eval.sh /home/craft/evaluation/coreference/scripts/
-COPY evaluation/build.boot /home/craft/evaluation/
+COPY evaluation/dependency/scripts/run-dependency-eval.sh /home/craft/evaluation/dependency/scripts/
+COPY build.boot /home/craft/evaluation/
+COPY src/ /home/craft/evaluation/src/
+COPY test/ /home/craft/evaluation/test/
+COPY resources/ /home/craft/evaluation/resources/
 COPY entrypoint.sh /
 RUN chmod 755 /entrypoint.sh && \
     chown -R craft:craft /home/craft/evaluation
 
 
 USER craft
-RUN chmod 755 /home/craft/evaluation/coreference/scripts/*.sh
+RUN chmod 755 /home/craft/evaluation/coreference/scripts/*.sh && \
+    chmod 755 /home/craft/evaluation/dependency/scripts/*.sh && \
+    cd /home/craft/evaluation && \
+    boot build install
 
 
 USER root
