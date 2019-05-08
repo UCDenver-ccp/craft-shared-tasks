@@ -5,8 +5,8 @@ function print_usage {
     echo "$(basename $0) [OPTIONS]"
     echo "  [-i <input directory>]: MUST BE ABSOLUTE PATH. The path to the directory of dependency files to test"
     echo "  [-g <gold standard directory>]: MUST BE ABSOLUTE PATH. The path to the directory containing the gold standard dependency files."
-    echo "  [-o <output (results) file>]: MUST BE ABSOLUTE PATH. The path to a directory where the output (dependency performance measures) will be written."
-    echo "  [-s <scorer directory>]: MUST BE ABSOLUTE PATH. The path to the MaltEval distribution (should contain lib/MaltEval.jar)"
+    echo "  [-o <output (results) directory>]: MUST BE ABSOLUTE PATH. The path to a directory where the output (dependency performance measures) will be written."
+    echo "  [-s <scorer directory>]: MUST BE ABSOLUTE PATH. The path to the conll18_ud_eval.py file"
 }
 
 ALLOW_PARTIAL='false'
@@ -20,7 +20,7 @@ while getopts "i:g:o:s:h" OPTION; do
         g) GOLD_DIRECTORY=$OPTARG
            ;;
         # the path where output logs are stored
-        o) OUTPUT_FILE=$OPTARG
+        o) OUTPUT_DIRECTORY=$OPTARG
            ;;
          # The metric to use
         s) SCORER_DIRECTORY=$OPTARG
@@ -31,22 +31,23 @@ while getopts "i:g:o:s:h" OPTION; do
     esac
 done
 
-MALTEVAL_CONFIG_FILE=${SCORER_DIRECTORY}/malt-eval-config.xml
-
-if [ ! -f ${MALTEVAL_CONFIG_FILE} ]; then
-    echo "Could not find the expected MaltEval configuration file: ${MALTEVAL_CONFIG_FILE}"
-fi
-
-if [[ -z ${INPUT_DIRECTORY} || -z ${GOLD_DIRECTORY} || -z ${SCORER_DIRECTORY} || -z ${OUTPUT_FILE} ]]; then
+if [[ -z ${INPUT_DIRECTORY} || -z ${GOLD_DIRECTORY} || -z ${SCORER_DIRECTORY} || -z ${OUTPUT_DIRECTORY} ]]; then
     echo "input directory: ${INPUT_DIRECTORY}"
 	echo "gold directory: ${GOLD_DIRECTORY}"
-	echo "output file: ${OUTPUT_FILE}"
+	echo "output directory: ${OUTPUT_DIRECTORY}"
 	echo "scorer directory: ${SCORER_DIRECTORY}"
     print_usage
     exit 1
 fi
 
-java -jar ${SCORER_DIRECTORY}/lib/MaltEval.jar -e ${MALTEVAL_CONFIG_FILE} \
-                                               -s "${INPUT_DIRECTORY}/" \
-                                               -g "${GOLD_DIRECTORY}/" \
-                                               --output ${OUTPUT_FILE}
+
+LOG_FILE=${OUTPUT_DIRECTORY}/dep_scores.log
+for filename in ${GOLD_DIRECTORY}/*.conllu; do
+    # the gold files in CRAFT have a .tree.conllu extension. The .tree part should probably not be there,
+    # so we remove it here when looking for the system file to test
+    basename=$(basename $filename .tree.conllu)
+    fname="${basename%.*}.conllu"
+    echo "Evaluating ${fname}"
+    python ${SCORER_DIRECTORY}/conll18_ud_eval.py ${filename} ${INPUT_DIRECTORY}/${fname}
+    echo "------------------ end ${fname}"
+done > ${LOG_FILE}

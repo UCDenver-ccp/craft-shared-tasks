@@ -6,51 +6,103 @@
     (:import java.io.StringWriter
       java.lang.Math))
 
-(def dependency-log-str (clojure.string/join "\n"
-                                             (list
-                                               "Evaluating 11532192.conllu"
-                                               "LAS F1 Score: 99.88"
-                                               "MLAS Score: 99.73"
-                                               "BLEX Score: 99.76"
-                                               "------------------ end 11532192.conllu"
-                                               "Evaluating 11597317.conllu"
-                                               "LAS F1 Score: 100.00"
-                                               "MLAS Score: 100.00"
-                                               "BLEX Score: 100.00"
-                                               "------------------ end 11597317.conllu")))
+(def document-dependency-log-str (clojure.string/join "\n"
+                                                      (list
+                                                        "Evaluation arguments: -e malt-eval-config.xml -s CRAFT.bill.git/derived-dependency/ -g CRAFT.bill.git/derived-dependency-gold/ --output result.out"
+                                                        "===================================================="
+                                                        "Gold:   CRAFT.bill.git/derived-dependency-gold/11532192.conll"
+                                                        "Parsed: CRAFT.bill.git/derived-dependency/11532192.conll"
+                                                        "===================================================="
+                                                        "GroupBy-> Token"
+                                                        ""
+                                                        "===================================================="
+                                                        ""
+                                                        "accuracy / Metric:UAS   accuracy / Metric:LAS   Token"
+                                                        "---------------------------------------------------------"
+                                                        "0.997                   0.993                   Row mean"
+                                                        "8072                    8072                    Row count"
+                                                        "---------------------------------------------------------"
+                                                        ""
+                                                        "===================================================="
+                                                        "Gold:   CRAFT.bill.git/derived-dependency-gold/11597317.conll"
+                                                        "Parsed: CRAFT.bill.git/derived-dependency/11597317.conll"
+                                                        "===================================================="
+                                                        "GroupBy-> Token"
+                                                        ""
+                                                        "===================================================="
+                                                        ""
+                                                        "accuracy / Metric:UAS   accuracy / Metric:LAS   Token"
+                                                        "---------------------------------------------------------"
+                                                        "1                       1                       Row mean"
+                                                        "2632                    2632                    Row count"
+                                                        "---------------------------------------------------------")))
 
-(deftest extract-dependency-results-test
+(deftest extract-document-dependency-results-test
          (testing "Extract dependency info from string"
-                  (is (= '(["11532192" {:las  99.88
-                                        :mlas 99.73
-                                        :blex 99.76}]
-                            ["11597317" {:las  100.00
-                                         :mlas 100.00
-                                         :blex 100.00}])
-                         (extract-dependency-results-from-string dependency-log-str)))))
+                  (is (= '(["11532192" {:uas 0.997
+                                        :las 0.993}]
+                            ["11597317" {:uas 1.0
+                                         :las 1.0}])
+                         (extract-document-dependency-results-from-string document-dependency-log-str)))))
+
+(def aggregate-dependency-log-str (clojure.string/join "\n"
+                                                       (list
+                                                         "===================================================="
+                                                         "Mean:"
+                                                         ""
+                                                         "===================================================="
+                                                         ""
+                                                         "Agg. accuracy   File number"
+                                                         "---------------------------"
+                                                         "1               Row mean"
+                                                         "67              Row count"
+                                                         "---------------------------"
+                                                         "0.997           <1>"
+                                                         "1               <2>"
+                                                         "1               <3>"
+                                                         "1               <4>"
+                                                         "Lots of intervening text here..."
+                                                         "===================================================="
+                                                         "Mean:"
+                                                         ""
+                                                         "===================================================="
+                                                         ""
+                                                         "Agg. accuracy   File number"
+                                                         "---------------------------"
+                                                         "1               Row mean"
+                                                         "67              Row count"
+                                                         "---------------------------"
+                                                         "0.993           <1>"
+                                                         "1               <2>"
+                                                         "1               <3>"
+                                                         )))
+
+(deftest extract-aggregate-dependency-results-test
+         (testing "Extract dependency info from string"
+                  (is (= '(["TOTAL" {:uas 1.0
+                                     :las 1.0}])
+                         (extract-aggregate-dependency-results-from-string aggregate-dependency-log-str)))))
 
 
 
-
-(deftest compile-dependency-results-test
+(deftest extract-dependency-results-from-file-test
          (with-tmp-dir
            (let [log-dir (io/file (io/as-file tmp-dir) "log-files1")
                  log-file (io/file log-dir "dependency.log")]
 
                 (.mkdirs log-dir)
-                (spit log-file dependency-log-str)
+                (spit log-file (str document-dependency-log-str "\n" aggregate-dependency-log-str))
 
                 (is (.exists log-file))
 
                 (testing "Compile dependency results from sample log file containing only two documents"
-                         (is (= {"11532192" {:las  99.88
-                                             :mlas 99.73
-                                             :blex 99.76}
-                                 "11597317" {:las  100.00
-                                             :mlas 100.00
-                                             :blex 100.00}}
-                                (compile-dependency-results (io/as-file log-dir))))))))
-
+                         (is (= {"11532192" {:uas 0.997
+                                             :las 0.993}
+                                 "11597317" {:uas 1.0
+                                             :las 1.0}
+                                 "TOTAL"    {:uas 1.0
+                                             :las 1.0}}
+                                (extract-dependency-results-from-file log-file)))))))
 
 
 (deftest serialize-dependency-results-test
@@ -60,24 +112,15 @@
                  writer (StringWriter.)]
 
                 (.mkdirs log-dir)
-                (spit log-file dependency-log-str)
+                (spit log-file (str document-dependency-log-str "\n" aggregate-dependency-log-str))
 
                 (is (.exists log-file))
 
                 (testing "that the results get output to the writer correctly."
-                         (serialize-dependency-results log-dir writer)
+                         (serialize-dependency-results log-file writer)
                          ;; test that the document lines are correct
-                         (is (= (str (clojure.string/join "\t" '("#document-id" "LAS" "MLAS" "BLEX")) "\n"
-                                     (clojure.string/join "\t" '("11532192" "99.88" "99.73" "99.76")) "\n"
-                                     (clojure.string/join "\t" '("11597317" "100.0" "100.0" "100.0")))
-                                (clojure.string/join "\n" (take 3 (clojure.string/split-lines (.toString writer))))))
-
-                         ;; now test the final AVERAGE line for correct values
-                         ;; unable to do this as a string test due to some round-off error appearing in the string
-
-                         (let [match (re-find #"AVERAGE\t(\d+.\d+)\t(\d+.\d+)\t(\d+.\d+)"
-                                              (last (clojure.string/split-lines (.toString writer))))]
-                              (is (= 4 (count match)))
-                              (is (< (Math/abs (- (/ 199.88 2.0) (Double/parseDouble (nth match 1)))) 1e-6))
-                              (is (< (Math/abs (- (/ 199.73 2.0) (Double/parseDouble (nth match 2)))) 1e-6))
-                              (is (< (Math/abs (- (/ 199.76 2.0) (Double/parseDouble (nth match 3)))) 1e-6)))))))
+                         (is (= (str (clojure.string/join "\t" '("#document-id" "UAS" "LAS")) "\n"
+                                     (clojure.string/join "\t" '("11532192" "0.997" "0.993")) "\n"
+                                     (clojure.string/join "\t" '("11597317" "1.0" "1.0")) "\n"
+                                     (clojure.string/join "\t" '("TOTAL" "1.0" "1.0")))
+                                (clojure.string/join "\n" (take 4 (clojure.string/split-lines (.toString writer))))))))))

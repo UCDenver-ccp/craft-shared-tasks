@@ -41,17 +41,32 @@ RUN cd /home/craft && \
     cd /home/craft/evaluation/coreference/reference-coreference-scorers.git && \
     perl test/test.pl
 
-# install CoNLL 2018 dependency parse evaluation software
+#
+# uncomment this block when universal dependency info is available in CRAFT
+#
+# install CoNLL 2018 universal dependency parse evaluation software
+#RUN cd /home/craft/evaluation && \
+#    mkdir universal-dependency && \
+#    cd universal-dependency && \
+#    wget http://universaldependencies.org/conll18/conll18_ud_eval.py && \
+#    python conll18_ud_eval.py -h
+
+# install the MaltEval tool for dependency parse evaluation
 RUN cd /home/craft/evaluation && \
-    mkdir dependency && \
-    cd dependency && \
-    wget http://universaldependencies.org/conll18/conll18_ud_eval.py && \
-    python conll18_ud_eval.py -h
+    mkdir -p dependency/malteval && \
+    cd dependency/malteval && \
+    wget https://drive.google.com/uc?export=download&id=0B1KaZVnBJE8_QnhqNE52T2FZWVE && \
+    unzip MaltEval-dist.zip
 
 # copy coreference scripts to the container
 USER root
 COPY evaluation/coreference/scripts/run-coref-eval.sh /home/craft/evaluation/coreference/scripts/
+
+# uncomment this block when universal dependency info is available in CRAFT
+#COPY evaluation/dependency/scripts/run-universal-dependency-eval.sh /home/craft/evaluation/dependency/scripts/
+
 COPY evaluation/dependency/scripts/run-dependency-eval.sh /home/craft/evaluation/dependency/scripts/
+COPY evaluation/dependency/scripts/malteval-config.xml /home/craft/evaluation/dependency/malteval/dist-20141005
 COPY build.boot /home/craft/evaluation/
 COPY src/ /home/craft/evaluation/src/
 COPY test/ /home/craft/evaluation/test/

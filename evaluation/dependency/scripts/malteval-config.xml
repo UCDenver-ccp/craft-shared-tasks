@@ -1,0 +1,9 @@
+<evaluation>
+  <parameter name="Metric">
+    <value>LAS</value>
+    <value>UAS</value>
+  </parameter>
+  <parameter name="GroupBy">
+    <value>Token</value>
+  </parameter>
+</evaluation>
