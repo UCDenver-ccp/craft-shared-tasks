@@ -17,21 +17,41 @@ RUN groupadd craft && \
 
 USER craft
 
-# install the CRAFT v3.1 distribution then run boot once to initialize it,
+# install the CRAFT v3.1.1 distribution then run boot once to initialize it,
 # then once more to download the dependencies for the CRAFT project
 RUN cd /home/craft && \
-    wget https://github.com/UCDenver-ccp/CRAFT/archive/v3.1.tar.gz && \
-    tar -xzf v3.1.tar.gz && \
-    rm v3.1.tar.gz && \
-    cd /home/craft/CRAFT-3.1 && \
+    wget https://github.com/UCDenver-ccp/CRAFT/archive/v3.1.1.tar.gz && \
+    tar -xzf v3.1.1.tar.gz && \
+    rm v3.1.1.tar.gz && \
+    cd /home/craft/CRAFT-3.1.1 && \
     boot -h && \
     boot dependency -h
 
 # build annotation files required for evaluations
 # 1. build CoNLL-Coref 2011/12 formatted files for the coreference annotations
 # 2. build bionlp formatted files for concept annotations
-RUN cd /home/craft/CRAFT-3.1 && \
-    boot part-of-speech coreference convert -i -o /home/craft/eval-data/coreference/conllcoref
+RUN cd /home/craft/CRAFT-3.1.1 && \
+    boot part-of-speech coreference convert -i -o /home/craft/eval-data/coreference/conllcoref && \
+    boot concept -t CHEBI convert -b -o /home/craft/eval-data/concept/bionlp/chebi && \
+    boot concept -t CHEBI -x convert -b -o /home/craft/eval-data/concept/bionlp/chebi_ext && \
+    boot concept -t CL convert -b -o /home/craft/eval-data/concept/bionlp/cl && \
+    boot concept -t CL -x convert -b -o /home/craft/eval-data/concept/bionlp/cl_ext && \
+    boot concept -t GO_BP convert -b -o /home/craft/eval-data/concept/bionlp/go_bp && \
+    boot concept -t GO_BP -x convert -b -o /home/craft/eval-data/concept/bionlp/go_bp_ext && \
+    boot concept -t GO_CC convert -b -o /home/craft/eval-data/concept/bionlp/go_cc && \
+    boot concept -t GO_CC -x convert -b -o /home/craft/eval-data/concept/bionlp/go_cc_ext && \
+    boot concept -t GO_MF convert -b -o /home/craft/eval-data/concept/bionlp/go_mf && \
+    boot concept -t GO_MF -x convert -b -o /home/craft/eval-data/concept/bionlp/go_mf_ext && \
+    boot concept -t MOP convert -b -o /home/craft/eval-data/concept/bionlp/mop && \
+    boot concept -t MOP -x convert -b -o /home/craft/eval-data/concept/bionlp/mop_ext && \
+    boot concept -t NCBITaxon convert -b -o /home/craft/eval-data/concept/bionlp/ncbitaxon && \
+    boot concept -t NCBITaxon -x convert -b -o /home/craft/eval-data/concept/bionlp/ncbitaxon_ext && \
+    boot concept -t PR convert -b -o /home/craft/eval-data/concept/bionlp/pr && \
+    boot concept -t PR -x convert -b -o /home/craft/eval-data/concept/bionlp/pr_ext && \
+    boot concept -t SO convert -b -o /home/craft/eval-data/concept/bionlp/so && \
+    boot concept -t SO -x convert -b -o /home/craft/eval-data/concept/bionlp/so_ext && \
+    boot concept -t UBERON convert -b -o /home/craft/eval-data/concept/bionlp/uberon && \
+    boot concept -t UBERON -x convert -b -o /home/craft/eval-data/concept/bionlp/uberon_ext
 
 # install coreference evaluation software and run unit tests to make sure it works
 RUN cd /home/craft && \
@@ -55,7 +75,7 @@ RUN cd /home/craft && \
 RUN cd /home/craft/evaluation && \
     mkdir -p dependency/malteval && \
     cd dependency/malteval && \
-    wget https://drive.google.com/uc?export=download&id=0B1KaZVnBJE8_QnhqNE52T2FZWVE && \
+    wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=0B1KaZVnBJE8_QnhqNE52T2FZWVE' -O MaltEval-dist.zip && \
     unzip MaltEval-dist.zip
 
 # copy coreference scripts to the container
@@ -66,7 +86,7 @@ COPY evaluation/coreference/scripts/run-coref-eval.sh /home/craft/evaluation/cor
 #COPY evaluation/dependency/scripts/run-universal-dependency-eval.sh /home/craft/evaluation/dependency/scripts/
 
 COPY evaluation/dependency/scripts/run-dependency-eval.sh /home/craft/evaluation/dependency/scripts/
-COPY evaluation/dependency/scripts/malteval-config.xml /home/craft/evaluation/dependency/malteval/dist-20141005
+COPY evaluation/dependency/scripts/malt-eval-config.xml /home/craft/evaluation/dependency/malteval/dist-20141005
 COPY build.boot /home/craft/evaluation/
 COPY src/ /home/craft/evaluation/src/
 COPY test/ /home/craft/evaluation/test/
@@ -82,10 +102,10 @@ RUN chmod 755 /home/craft/evaluation/coreference/scripts/*.sh && \
     cd /home/craft/evaluation && \
     boot build install
 
+ENV BOOT_JVM_OPTIONS='-Xmx5g -client'
 
 USER root
 ENTRYPOINT ["/entrypoint.sh"]
 
-# install concept annotation evaluation software
 
 
