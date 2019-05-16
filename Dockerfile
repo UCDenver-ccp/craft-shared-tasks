@@ -90,14 +90,14 @@ COPY evaluation/dependency/scripts/malt-eval-config.xml /home/craft/evaluation/d
 COPY build.boot /home/craft/evaluation/
 COPY src/ /home/craft/evaluation/src/
 COPY test/ /home/craft/evaluation/test/
-COPY resources/ /home/craft/evaluation/resources/
 COPY entrypoint.sh /
 RUN chmod 755 /entrypoint.sh && \
     chown -R craft:craft /home/craft/evaluation
 
 
 USER craft
-RUN chmod 755 /home/craft/evaluation/coreference/scripts/*.sh && \
+RUN mkdir /home/craft/evaluation/resources/ && \
+    chmod 755 /home/craft/evaluation/coreference/scripts/*.sh && \
     chmod 755 /home/craft/evaluation/dependency/scripts/*.sh && \
     cd /home/craft/evaluation && \
     boot build install
