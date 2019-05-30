@@ -14,8 +14,7 @@
          '[clojure.java.io :refer [file]]
          '[craft-eval.coref :refer [serialize-coref-results]]
          '[craft-eval.dependency :refer [serialize-dependency-results]]
-         ;;; uncomment the dependency below when universal dependency info is available in CRAFT
-         ;'[craft-eval.univ-dependency :refer [serialize-dependency-results]]
+         '[craft-eval.univ-dependency :refer [serialize-univ-dependency-results]]
          )
 
 (task-options!
@@ -32,7 +31,7 @@
   repl {:init-ns 'craft-eval.coref}
   jar {:file (str "craft-eval-" version "-standalone.jar")})
 
-(def craft-version "3.1.1")
+(def craft-version "3.1.2")
 
 (deftask build
          "Build the project locally as a JAR."
@@ -328,82 +327,78 @@
 ;;; ============================================================================== ;;;
 ;;; ================= Universal Dependency Parse Evaluation Tasks ================
 ;;; ============================================================================== ;;;
-;
-;;; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ;;;
-;;; ++++++ Commented out as CRAFT does not currently have Universal Dependency information ++++++ ;;;
-;;; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ;;;
-;
-;(deftask univ-dependency-eval-setup
-;         "Sets constants used in the dependency parse evaluation."
-;         [b eval-base-directory VAL str "The path to the base directory that contains the dependency parse evaluation scripts directory. MUST BE ABSOLUTE PATH."
-;          i input-directory VAL str "The path to the directory of dependency parse files to test. MUST BE ABSOLUTE PATH."
-;          g gold-standard-directory VAL str "The path to the directory containing the gold standard dependency parse files. MUST BE ABSOLUTE PATH."
-;          s scorer-directory VAL str "The path to the conll18_ud_eval.py file. MUST BE ABSOLUTE PATH."]
-;         (with-pre-wrap fileset
-;                        (let [intermediate-results-directory (file eval-base-directory ".intermediate-results" "dependency")
-;                              dependency-eval-script (file eval-base-directory "dependency" "scripts" "run-universal-dependency-eval.sh")]
-;                             ;; scrub the intermediate results directory if it exists
-;                             (if (.exists intermediate-results-directory) (.delete intermediate-results-directory))
-;                             (.mkdirs intermediate-results-directory)
-;                             (merge fileset
-;                                    {:eval-base-directory                       (file eval-base-directory)
-;                                     :input-directory                           (file input-directory)
-;                                     :gold-standard-directory                   (file gold-standard-directory)
-;                                     :scorer-directory                          (file scorer-directory)
-;                                     :dependency-intermediate-results-directory intermediate-results-directory
-;                                     :dependency-eval-script                    dependency-eval-script}))))
-;
-;
-;(deftask univ-dependency-eval-setup-docker []
-;         "Sets constants used in the dependency parse evaluation when running the evaluation inside a Docker container."
-;         (comp (univ-dependency-eval-setup :eval-base-directory "/home/craft/evaluation"
-;                                           :input-directory "/files-to-evaluate"
-;                                           :gold-standard-directory (str "/home/craft/CRAFT-" craft-version "/structural-annotation/dependency/conllu")
-;                                           :scorer-directory "/home/craft/evaluation/dependency")))
-;
-;
-;(deftask run-univ-dependency-eval []
-;         "evaluate a set of dependency parse files in the CoNLL-U file format against CRAFT"
-;         (with-pre-wrap fileset
-;                        (println (str "Running dependency parse evaluation."))
-;
-;                        (dosh (.getAbsolutePath (:dependency-eval-script fileset))
-;                              "-i" (.getAbsolutePath (:input-directory fileset))
-;                              "-g" (.getAbsolutePath (:gold-standard-directory fileset))
-;                              "-o" (.getAbsolutePath (:dependency-intermediate-results-directory fileset))
-;                              "-s" (.getAbsolutePath (:scorer-directory fileset)))
-;                        fileset))
-;
-;
-;(deftask output-univ-dependency-results []
-;         "Parse log files in the .intermediate-results directory and output to the final results
-;         file (which is written to the input directory containing the files being evaluated)."
-;         (with-pre-wrap fileset
-;                        (let [intermediate-results-directory (:dependency-intermediate-results-directory fileset)
-;                              output-file (file (:input-directory fileset) "dependency_results.tsv")]
-;                             (with-open [w (clojure.java.io/writer output-file :encoding "UTF-8")]
-;                                        (serialize-dependency-results intermediate-results-directory w))
-;                             (println (str "Evaluation complete. Please find the computed dependency parse evaluation results in "
-;                                           (.getAbsolutePath output-file))))
-;                        fileset))
-;
-;(deftask eval-univ-dependency
-;         "Evaluates a set of files in the CoNLL-U file format against CRAFT dependency parses.
-;          If no input arguments are specified then this tasks uses the
-;          Docker-specific setup by default."
-;         [b eval-base-directory VAL str "The path to the base directory that contains the dependency parse evaluation scripts directory. MUST BE ABSOLUTE PATH."
-;          i input-directory VAL str "The path to the directory of dependency parse files to test. MUST BE ABSOLUTE PATH."
-;          g gold-standard-directory VAL str "The path to the directory containing the gold standard dependency parse files. MUST BE ABSOLUTE PATH."
-;          s scorer-directory VAL str "The path to the conll18_ud_eval.py file. MUST BE ABSOLUTE PATH."]
-;         (comp (if (nil? eval-base-directory)
-;                 (dependency-eval-setup-docker)
-;                 (dependency-eval-setup :eval-base-directory eval-base-directory
-;                                        :input-directory input-directory
-;                                        :gold-standard-directory gold-standard-directory
-;                                        :scorer-directory scorer-directory))
-;
-;               ;; run all dependency parse evaluations
-;               (run-univ-dependency-eval)
-;
-;               ;; compile and output the results to a file in the input-directory
-;               (output-dependency-results)))
+
+(deftask univ-dependency-eval-setup
+         "Sets constants used in the dependency parse evaluation."
+         [b eval-base-directory VAL str "The path to the base directory that contains the dependency parse evaluation scripts directory. MUST BE ABSOLUTE PATH."
+          i input-directory VAL str "The path to the directory of dependency parse files to test. MUST BE ABSOLUTE PATH."
+          g gold-standard-directory VAL str "The path to the directory containing the gold standard dependency parse files. MUST BE ABSOLUTE PATH."
+          s scorer-directory VAL str "The path to the conll18_ud_eval.py file. MUST BE ABSOLUTE PATH."]
+         (with-pre-wrap fileset
+                        (let [intermediate-results-directory (file eval-base-directory ".intermediate-results" "dependency")
+                              dependency-eval-script (file eval-base-directory "dependency" "scripts" "run-universal-dependency-eval.sh")]
+                             ;; scrub the intermediate results directory if it exists
+                             (if (.exists intermediate-results-directory) (.delete intermediate-results-directory))
+                             (.mkdirs intermediate-results-directory)
+                             (merge fileset
+                                    {:eval-base-directory                       (file eval-base-directory)
+                                     :input-directory                           (file input-directory)
+                                     :gold-standard-directory                   (file gold-standard-directory)
+                                     :scorer-directory                          (file scorer-directory)
+                                     :dependency-intermediate-results-directory intermediate-results-directory
+                                     :dependency-eval-script                    dependency-eval-script}))))
+
+
+(deftask univ-dependency-eval-setup-docker []
+         "Sets constants used in the dependency parse evaluation when running the evaluation inside a Docker container."
+         (comp (univ-dependency-eval-setup :eval-base-directory "/home/craft/evaluation"
+                                           :input-directory "/files-to-evaluate"
+                                           :gold-standard-directory (str "/home/craft/CRAFT-" craft-version "/structural-annotation/dependency/conllu")
+                                           :scorer-directory "/home/craft/evaluation/universal-dependency")))
+
+
+(deftask run-univ-dependency-eval []
+         "evaluate a set of dependency parse files in the CoNLL-U file format against CRAFT"
+         (with-pre-wrap fileset
+                        (println (str "Running dependency parse evaluation."))
+
+                        (dosh (.getAbsolutePath (:dependency-eval-script fileset))
+                              "-i" (.getAbsolutePath (:input-directory fileset))
+                              "-g" (.getAbsolutePath (:gold-standard-directory fileset))
+                              "-o" (.getAbsolutePath (:dependency-intermediate-results-directory fileset))
+                              "-s" (.getAbsolutePath (:scorer-directory fileset)))
+                        fileset))
+
+
+(deftask output-univ-dependency-results []
+         "Parse log files in the .intermediate-results directory and output to the final results
+         file (which is written to the input directory containing the files being evaluated)."
+         (with-pre-wrap fileset
+                        (let [intermediate-results-directory (:dependency-intermediate-results-directory fileset)
+                              output-file (file (:input-directory fileset) "dependency_results.tsv")]
+                             (with-open [w (clojure.java.io/writer output-file :encoding "UTF-8")]
+                                        (serialize-univ-dependency-results intermediate-results-directory w))
+                             (println (str "Evaluation complete. Please find the computed dependency parse evaluation results in "
+                                           (.getAbsolutePath output-file))))
+                        fileset))
+
+(deftask eval-univ-dependency
+         "Evaluates a set of files in the CoNLL-U file format against CRAFT dependency parses.
+          If no input arguments are specified then this tasks uses the
+          Docker-specific setup by default."
+         [b eval-base-directory VAL str "The path to the base directory that contains the dependency parse evaluation scripts directory. MUST BE ABSOLUTE PATH."
+          i input-directory VAL str "The path to the directory of dependency parse files to test. MUST BE ABSOLUTE PATH."
+          g gold-standard-directory VAL str "The path to the directory containing the gold standard dependency parse files. MUST BE ABSOLUTE PATH."
+          s scorer-directory VAL str "The path to the conll18_ud_eval.py file. MUST BE ABSOLUTE PATH."]
+         (comp (if (nil? eval-base-directory)
+                 (univ-dependency-eval-setup-docker)
+                 (univ-dependency-eval-setup :eval-base-directory eval-base-directory
+                                        :input-directory input-directory
+                                        :gold-standard-directory gold-standard-directory
+                                        :scorer-directory scorer-directory))
+
+               ;; run all dependency parse evaluations
+               (run-univ-dependency-eval)
+
+               ;; compile and output the results to a file in the input-directory
+               (output-univ-dependency-results)))

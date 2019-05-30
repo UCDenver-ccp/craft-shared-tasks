@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.1 - 2015-05-30
+* Re-activated universal dependency evaluation scripts
+* Revised concept evaluation to properly handle the extension class sets
+* Now uses CRAFT v3.1.2
+
 ## 0.1.0 - 2015-05-15
 ### Initial commit
 * Code and scripts to build a Docker container that serves as the evaluation platform for comparing against the [CRAFT Corpus](https://github.com/UCDenver-ccp/CRAFT).

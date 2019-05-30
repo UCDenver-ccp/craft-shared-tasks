@@ -1,7 +1,6 @@
 package craft.eval.concept;
 
 import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -16,15 +15,14 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.apache.commons.io.IOUtils;
-
 import edu.ucdenver.ccp.common.collections.CollectionsUtil;
 import edu.ucdenver.ccp.common.file.CharacterEncoding;
 import edu.ucdenver.ccp.common.file.FileUtil;
 import edu.ucdenver.ccp.common.file.FileWriterUtil;
-import edu.ucdenver.ccp.common.file.reader.StreamLineIterator;
 import edu.ucdenver.ccp.file.conversion.TextDocument;
 import edu.ucdenver.ccp.file.conversion.bionlp.BioNLPDocumentReader;
+import edu.ucdenver.ccp.nlp.core.annotation.TextAnnotation;
+import edu.ucdenver.ccp.nlp.core.mention.ClassMention;
 import edu.ucdenver.ccp.nlp.evaluation.bossy2013.BossyMetric;
 import edu.ucdenver.ccp.nlp.evaluation.bossy2013.BoundaryMatchStrategy;
 import edu.ucdenver.ccp.nlp.evaluation.bossy2013.SlotErrorRate;
@@ -68,7 +66,7 @@ public class CraftConceptEvaluationUtil {
 		}
 
 		private String getRelativePath() {
-			String base = (this.name().endsWith("_EXT")) ? this.name().substring(0, this.name().length()-4)
+			String base = (this.name().endsWith("_EXT")) ? this.name().substring(0, this.name().length() - 4)
 					: this.name();
 			if (base.equals("NCBITAXON")) {
 				base = "NCBITaxon";
@@ -120,13 +118,9 @@ public class CraftConceptEvaluationUtil {
 				return new GZIPInputStream(new FileInputStream(ontologyFile));
 			}
 			if (ontologyFile.getName().endsWith(".zip")) {
-				// convert the ontology to a string so that the zip file can be closed
-				ZipFile zipFile = new ZipFile(ontologyFile);
+				zipFile = new ZipFile(ontologyFile);
 				ZipEntry zipEntry = zipFile.entries().nextElement();
-				InputStream inputStream = zipFile.getInputStream(zipEntry);
-				String s = IOUtils.toString(inputStream, encoding.getCharacterSetName());
-				zipFile.close();
-				return new ByteArrayInputStream(s.getBytes());
+				return zipFile.getInputStream(zipEntry);
 			}
 			throw new IllegalArgumentException(
 					"Unable to return input stream for ontology file: " + ontologyFile.getAbsolutePath());
@@ -136,7 +130,7 @@ public class CraftConceptEvaluationUtil {
 	/**
 	 * Same as the other evaluate(directory, ...) method but the CharacterEncoding defaults to
 	 * UTF-8.
-	 * 
+	 *
 	 * @param craftDistributionDirectory
 	 * @param referenceDirectoryBase
 	 * @param testDirectoryBase
@@ -144,7 +138,7 @@ public class CraftConceptEvaluationUtil {
 	 * @throws IOException
 	 */
 	public static void evaluate(File craftDistributionDirectory, File referenceDirectoryBase, File testDirectoryBase,
-			BoundaryMatchStrategy boundaryMatchStrategy) throws IOException {
+								BoundaryMatchStrategy boundaryMatchStrategy) throws IOException {
 		evaluate(craftDistributionDirectory, referenceDirectoryBase, testDirectoryBase, boundaryMatchStrategy,
 				CharacterEncoding.UTF_8);
 	}
@@ -168,7 +162,7 @@ public class CraftConceptEvaluationUtil {
 	 * @throws IOException
 	 */
 	public static void evaluate(File craftDistributionDirectory, File referenceDirectoryBase, File testDirectoryBase,
-			BoundaryMatchStrategy boundaryMatchStrategy, CharacterEncoding ontologyEncoding) throws IOException {
+								BoundaryMatchStrategy boundaryMatchStrategy, CharacterEncoding ontologyEncoding) throws IOException {
 		File[] directories = testDirectoryBase.listFiles(new FileFilter() {
 			@Override
 			public boolean accept(File file) {
@@ -213,7 +207,7 @@ public class CraftConceptEvaluationUtil {
 
 	/**
 	 * Ontology file is assumed to be in the reference directory
-	 * 
+	 *
 	 * @param referenceDirectory
 	 * @param testDirectory
 	 * @param boundaryMatchStrategy
@@ -223,7 +217,7 @@ public class CraftConceptEvaluationUtil {
 	 * @throws IOException
 	 */
 	public static void evaluate(OntologyKey ontologyKey, File craftDistributionBaseDirectory, File referenceDirectory,
-			File testDirectory, BoundaryMatchStrategy boundaryMatchStrategy, CharacterEncoding ontologyEncoding)
+								File testDirectory, BoundaryMatchStrategy boundaryMatchStrategy, CharacterEncoding ontologyEncoding)
 			throws IOException {
 
 		System.out.println("Evaluating " + ontologyKey.name() + " concept annotations.");
@@ -261,6 +255,38 @@ public class CraftConceptEvaluationUtil {
 							CharacterEncoding.UTF_8);
 					TextDocument goldDocument = docReader.readDocument(sourceId, "unknown", goldAnnotFile, txtFile,
 							CharacterEncoding.UTF_8);
+
+					/*
+					 * Evaluation of the extension class annotations is somewhat tricky because
+					 * although the gold standard annotations use the extension class namespace, the
+					 * extension class namespace is not used in the provided ontologies for classes
+					 * that were dynamically created. For example, the CHEBI role hierarchy has been
+					 * mirrored with the extension namespace (CHEBI_EXT) in order to annotate
+					 * chemical entities (instead of roles), however this hierarchy is not
+					 * explicitly represented in the provided ontology. Instead, the original role
+					 * hierarchy using the standard CHEBI (OBO) namespace is used. Because the
+					 * ontologies use the standard namespace even for the dynamically generated
+					 * extension classes, we must translate any input annotation using a dynamically
+					 * generated namespace (e.g. _EXT) to its corresponding base namespace. We can
+					 * recognize the dynamically generated classes by a simple pattern: XX_EXT:\d+$.
+					 * That is, they have some characters representing the ontology (the XX)
+					 * followed by _EXT: and then only numbers. To translate to the base namespace,
+					 * we simply remove the _EXT. Keep in mind that there are non-dynamically
+					 * generated ontology concepts that use the extension namespace that should not
+					 * be translated. These all have words in their identifiers (not numbers) so
+					 * they will not match the simple pattern we use here.
+					 *
+					 * NOTE: do not do this translation for GO_MF
+					 */
+					if (ontologyKey.name().endsWith("_EXT") && ontologyKey != OntologyKey.GO_MF_EXT) {
+						/*
+						 * so, if this is an extension class project, then we need to do the
+						 * translation for both the test and reference annotation sets
+						 */
+						translateExtensionToBaseNamespace(goldDocument);
+						translateExtensionToBaseNamespace(testDocument);
+					}
+
 					SlotErrorRate ser = bm.evaluate(goldDocument.getAnnotations(), testDocument.getAnnotations(),
 							boundaryMatchStrategy);
 					writeSlotErrorRate(sourceId, ser, writer);
@@ -268,6 +294,35 @@ public class CraftConceptEvaluationUtil {
 				}
 			}
 			writeSlotErrorRate("TOTAL", totalSer, writer);
+		}
+	}
+
+	/**
+	 * @param document
+	 *            Processes the annotation in the input document. If there are annotations that use
+	 *            an extension class that matches the XX_EXT:\d+$ pattern, then remove the _EXT
+	 *            thereby creating an annotation to a base class instead of an extension class. This
+	 *            is done b/c these particular extension classes are not explicitly represented in
+	 *            the ontology, and their corresponding base classes should be used during
+	 *            evaluation instead. See above comment for further discussion.
+	 *
+	 *            For PR, instead of just numbers, we need to account for UniProt identifiers after
+	 *            the colon. This is straightforward as UniProt identifiers follow a regular
+	 *            expression.
+	 */
+	public static void translateExtensionToBaseNamespace(TextDocument document) {
+		for (TextAnnotation annot : document.getAnnotations()) {
+			ClassMention cm = annot.getClassMention();
+			if (cm.getMentionName().matches("[A-Z]+_EXT:\\d+")) {
+				String updatedIdentifier = cm.getMentionName().replace("_EXT", "");
+				cm.setMentionName(updatedIdentifier);
+			}
+			/* handle PR separately by allowing UniProt identifiers after the colon */
+			if (cm.getMentionName()
+					.matches("PR_EXT:[OPQ][0-9][A-Z0-9]{3}[0-9]-?[0-9]*|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}-?[0-9]*")) {
+				String updatedIdentifier = cm.getMentionName().replace("_EXT", "");
+				cm.setMentionName(updatedIdentifier);
+			}
 		}
 	}
 
@@ -286,83 +341,6 @@ public class CraftConceptEvaluationUtil {
 		sb.append("\t" + ser.getRecall().setScale(4, BigDecimal.ROUND_HALF_UP));
 		sb.append("\t" + ser.getFScore().setScale(4, BigDecimal.ROUND_HALF_UP));
 		writer.write(sb.toString() + "\n");
-	}
-
-	public static void main(String[] args) {
-
-		File craftDistributionDirectory = new File(
-				"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git");
-		File referenceDirectoryBase = new File(
-				"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/sample-test-data/concept-gold/bionlp");
-		File testDirectoryBase = new File(
-				"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/sample-test-data/concept");
-
-		try {
-
-			// File ontFile = new File(
-			// "/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/CL/CL/CL.obo.zip");
-			// File ontFile = new File("/Users/bill/Downloads/CL+extensions.obo.zip");
-			List<File> ontFiles = CollectionsUtil.createList(
-					// new File(
-					// "/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/CL/CL/CL.obo.zip"),
-					// new File(
-					// "/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/CL/CL+extensions/CL+extensions.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/CHEBI/CHEBI/CHEBI.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/CHEBI/CHEBI+extensions/CHEBI+extensions.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/GO_BP/GO_BP/GO.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/GO_BP/GO_BP+extensions/GO+GO_BP_extensions.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/GO_CC/GO_CC/GO.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/GO_CC/GO_CC+extensions/GO+GO_CC_extensions.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/GO_MF/GO_MF/GO_MF_stub.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/GO_MF/GO_MF+extensions/GO_MF_stub+GO_MF_extensions.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/MOP/MOP/MOP.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/MOP/MOP+extensions/MOP+extensions.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/NCBITaxon/NCBITaxon/NCBITaxon.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/NCBITaxon/NCBITaxon+extensions/NCBITaxon+extensions.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/PR/PR/PR.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/PR/PR+extensions/PR+extensions.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/SO/SO/SO.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/SO/SO+extensions/SO+extensions.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/UBERON/UBERON/UBERON.obo.zip"),
-					new File(
-							"/Users/bill/Dropbox/work/projects/craft-shared-task-2019/CRAFT.bill.git/concept-annotation/UBERON/UBERON+extensions/UBERON+extensions.obo.zip")
-
-			);
-			for (File ontFile : ontFiles) {
-				System.out.println(ontFile);
-				ZipFile zipFile = new ZipFile(ontFile);
-				ZipEntry zipEntry = zipFile.entries().nextElement();
-				InputStream inputStream = zipFile.getInputStream(zipEntry);
-
-				for (StreamLineIterator lineIter = new StreamLineIterator(inputStream, CharacterEncoding.UTF_8,
-						null); lineIter.hasNext();) {
-					lineIter.next().getText();
-				}
-				zipFile.close();
-			}
-			// evaluate(craftDistributionDirectory, referenceDirectoryBase, testDirectoryBase,
-			// BoundaryMatchStrategy.JACCARD, CharacterEncoding.UTF_8);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
 	}
 
 }

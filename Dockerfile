@@ -17,20 +17,20 @@ RUN groupadd craft && \
 
 USER craft
 
-# install the CRAFT v3.1.1 distribution then run boot once to initialize it,
+# install the CRAFT v3.1.2 distribution then run boot once to initialize it,
 # then once more to download the dependencies for the CRAFT project
 RUN cd /home/craft && \
-    wget https://github.com/UCDenver-ccp/CRAFT/archive/v3.1.1.tar.gz && \
-    tar -xzf v3.1.1.tar.gz && \
-    rm v3.1.1.tar.gz && \
-    cd /home/craft/CRAFT-3.1.1 && \
+    wget https://github.com/UCDenver-ccp/CRAFT/archive/v3.1.2.tar.gz && \
+    tar -xzf v3.1.2.tar.gz && \
+    rm v3.1.2.tar.gz && \
+    cd /home/craft/CRAFT-3.1.2 && \
     boot -h && \
     boot dependency -h
 
 # build annotation files required for evaluations
 # 1. build CoNLL-Coref 2011/12 formatted files for the coreference annotations
 # 2. build bionlp formatted files for concept annotations
-RUN cd /home/craft/CRAFT-3.1.1 && \
+RUN cd /home/craft/CRAFT-3.1.2 && \
     boot part-of-speech coreference convert -i -o /home/craft/eval-data/coreference/conllcoref && \
     boot concept -t CHEBI convert -b -o /home/craft/eval-data/concept/bionlp/chebi && \
     boot concept -t CHEBI -x convert -b -o /home/craft/eval-data/concept/bionlp/chebi_ext && \
@@ -61,15 +61,13 @@ RUN cd /home/craft && \
     cd /home/craft/evaluation/coreference/reference-coreference-scorers.git && \
     perl test/test.pl
 
-#
-# uncomment this block when universal dependency info is available in CRAFT
-#
+
 # install CoNLL 2018 universal dependency parse evaluation software
-#RUN cd /home/craft/evaluation && \
-#    mkdir universal-dependency && \
-#    cd universal-dependency && \
-#    wget http://universaldependencies.org/conll18/conll18_ud_eval.py && \
-#    python conll18_ud_eval.py -h
+RUN cd /home/craft/evaluation && \
+    mkdir universal-dependency && \
+    cd universal-dependency && \
+    wget http://universaldependencies.org/conll18/conll18_ud_eval.py && \
+    python conll18_ud_eval.py -h
 
 # install the MaltEval tool for dependency parse evaluation
 RUN cd /home/craft/evaluation && \
@@ -82,9 +80,8 @@ RUN cd /home/craft/evaluation && \
 USER root
 COPY evaluation/coreference/scripts/run-coref-eval.sh /home/craft/evaluation/coreference/scripts/
 
-# uncomment this block when universal dependency info is available in CRAFT
-#COPY evaluation/dependency/scripts/run-universal-dependency-eval.sh /home/craft/evaluation/dependency/scripts/
 
+COPY evaluation/dependency/scripts/run-universal-dependency-eval.sh /home/craft/evaluation/dependency/scripts/
 COPY evaluation/dependency/scripts/run-dependency-eval.sh /home/craft/evaluation/dependency/scripts/
 COPY evaluation/dependency/scripts/malt-eval-config.xml /home/craft/evaluation/dependency/malteval/dist-20141005
 COPY build.boot /home/craft/evaluation/

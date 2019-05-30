@@ -54,7 +54,7 @@
                                                      (/ (:mlas-sum counts-map) (:total-count counts-map))
                                                      (/ (:blex-sum counts-map) (:total-count counts-map)))) "\n")))
 
-(defn serialize-dependency-results [log-directory writer]
+(defn serialize-univ-dependency-results [log-directory writer]
       "Parse log files in the specified log directory and output all results to
       the writer, including a line that has aggregated 'total' results."
       ;; write the file header
