@@ -33,7 +33,7 @@
   repl {:init-ns 'craft-eval.coref}
   jar {:file (str "craft-eval-" version "-standalone.jar")})
 
-(def craft-version "3.1.2")
+(def craft-version "3.1.3")
 
 (deftask build
          "Build the project locally as a JAR."
