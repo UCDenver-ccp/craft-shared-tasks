@@ -6,7 +6,7 @@
           :dependencies '[[org.clojure/clojure "RELEASE"]
                           [adzerk/boot-test "RELEASE" :scope "test"]
                           [test-with-files "0.1.1" :scope "test"]
-                          [edu.ucdenver.ccp/file-conversion-onejar "0.2.1"]
+                          [edu.ucdenver.ccp/file-conversion-onejar "0.2.2"]
                           [edu.ucdenver.ccp/ccp-nlp-evaluation-onejar "3.5.2"]]
           :repositories #(conj % ["bionlp" {:url "https://svn.code.sf.net/p/bionlp/code/repo/"}]))
 
@@ -16,6 +16,8 @@
          '[craft-eval.dependency :refer [serialize-dependency-results]]
          '[craft-eval.univ-dependency :refer [serialize-univ-dependency-results]]
          )
+
+(import edu.ucdenver.ccp.file.conversion.conllcoref2012.CoNLLCoref2012DocumentValidator)
 
 (task-options!
   aot {:namespace #{'craft-eval.coref}}
@@ -50,6 +52,8 @@
          [b eval-base-directory VAL str "The path to the base directory that contains the coreference evaluation scripts directory. MUST BE ABSOLUTE PATH."
           i input-directory VAL str "The path to the directory of coreference files to test. MUST BE ABSOLUTE PATH."
           g gold-standard-directory VAL str "The path to the directory containing the gold standard coreference files. MUST BE ABSOLUTE PATH."
+          c craft-distribution-directory VAL str "The path to the directory containing the CRAFT distribution. This
+                                                  directory is required as it contains the text files that are used for CoNLL-Coref file validation. MUST BE ABSOLUTE PATH."
           s scorer-directory VAL str "The path to the scorer.pl file. MUST BE ABSOLUTE PATH."]
          (with-pre-wrap fileset
                         (let [intermediate-results-directory (file eval-base-directory ".intermediate-results" "coref")
@@ -61,6 +65,7 @@
                                     {:eval-base-directory                  (file eval-base-directory)
                                      :input-directory                      (file input-directory)
                                      :gold-standard-directory              (file gold-standard-directory)
+                                     :craft-distribution-directory         (file craft-distribution-directory)
                                      :scorer-directory                     (file scorer-directory)
                                      :coref-intermediate-results-directory intermediate-results-directory
                                      :coref-eval-script                    coref-eval-script}))))
@@ -71,6 +76,7 @@
          (comp (coref-eval-setup :eval-base-directory "/home/craft/evaluation"
                                  :input-directory "/files-to-evaluate"
                                  :gold-standard-directory "/home/craft/eval-data/coreference/conllcoref"
+                                 :craft-distribution-directory (str "/home/craft/CRAFT-" craft-version)
                                  :scorer-directory "/home/craft/evaluation/coreference/reference-coreference-scorers.git")))
 
 
@@ -79,6 +85,7 @@
          [m metric VAL str "Indicator of the coreference metric to use. Must be one of: muc|bcub|ceafm|ceafe|blanc|lea"
           p allow-partial-matches bool "Defaults to 'false'. If set to 'true' then partial mention matches are permitted, otherwise mentions must have identical spans to match."]
          (with-pre-wrap fileset
+
                         (println (str "Running coreference evaluation. Metric = " metric))
 
                         (dosh (.getAbsolutePath (:coref-eval-script fileset))
@@ -103,6 +110,22 @@
                                            (.getAbsolutePath output-file))))
                         fileset))
 
+
+(deftask validate-coref-files []
+         "Check coreference files, mainly for properly formatted discontinuous spans."
+         (with-pre-wrap fileset
+                        (println (str "Validating coreference gold standard files..."))
+                        (CoNLLCoref2012DocumentValidator/main (into-array [(.getAbsolutePath (:gold-standard-directory fileset))
+                                                                           (.getAbsolutePath (file (:craft-distribution-directory fileset) "articles" "txt"))]))
+
+                        (println (str "Validating coreference test files..."))
+                        (CoNLLCoref2012DocumentValidator/main (into-array [(.getAbsolutePath (:input-directory fileset))
+                                                                           (.getAbsolutePath (file (:craft-distribution-directory fileset) "articles" "txt"))]))
+                        fileset))
+
+
+
+
 (deftask eval-coreference
          "Evaluates a set of files in the CoNLL-Coref 2011/12 file format against CRAFT coreference
           identity chain annotations. If no input arguments are specified then this tasks uses the
@@ -110,13 +133,18 @@
          [b eval-base-directory VAL str "The path to the base directory that contains the coreference evaluation scripts directory. MUST BE ABSOLUTE PATH."
           i input-directory VAL str "The path to the directory of coreference files to test. MUST BE ABSOLUTE PATH."
           g gold-standard-directory VAL str "The path to the directory containing the gold standard coreference files. MUST BE ABSOLUTE PATH."
-          s scorer-directory VAL str "The path to the scorer.pl file. MUST BE ABSOLUTE PATH."]
+          s scorer-directory VAL str "The path to the scorer.pl file. MUST BE ABSOLUTE PATH."
+          c craft-distribution-directory VAL str "The path to the directory containing the CRAFT distribution. This
+                                                  directory is required as it contains the text files that are used for CoNLL-Coref file validation. MUST BE ABSOLUTE PATH."]
          (comp (if (nil? eval-base-directory)
                  (coref-eval-setup-docker)
                  (coref-eval-setup :eval-base-directory eval-base-directory
                                    :input-directory input-directory
                                    :gold-standard-directory gold-standard-directory
-                                   :scorer-directory scorer-directory))
+                                   :scorer-directory scorer-directory
+                                   :craft-distribution-directory craft-distribution-directory))
+
+               (validate-coref-files)
 
                ;; run all coreference evaluations
                (run-coref-eval :metric "muc" :allow-partial-matches false)
@@ -393,9 +421,9 @@
          (comp (if (nil? eval-base-directory)
                  (univ-dependency-eval-setup-docker)
                  (univ-dependency-eval-setup :eval-base-directory eval-base-directory
-                                        :input-directory input-directory
-                                        :gold-standard-directory gold-standard-directory
-                                        :scorer-directory scorer-directory))
+                                             :input-directory input-directory
+                                             :gold-standard-directory gold-standard-directory
+                                             :scorer-directory scorer-directory))
 
                ;; run all dependency parse evaluations
                (run-univ-dependency-eval)
