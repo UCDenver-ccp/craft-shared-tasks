@@ -1,5 +1,5 @@
 (def project 'edu.ucdenver.ccp/craft-eval)
-(def version "0.1.0")
+(def version "0.1.2")
 
 (set-env! :resource-paths #{"resources"}
           :source-paths #{"test/clojure" "src/clojure" "src/java"}
