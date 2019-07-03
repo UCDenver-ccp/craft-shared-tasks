@@ -65,7 +65,7 @@
                 (is (.exists log-file))
 
                 (testing "that the results get output to the writer correctly."
-                         (serialize-dependency-results log-dir writer)
+                         (serialize-univ-dependency-results log-dir writer)
                          ;; test that the document lines are correct
                          (is (= (str (clojure.string/join "\t" '("#document-id" "LAS" "MLAS" "BLEX")) "\n"
                                      (clojure.string/join "\t" '("11532192" "99.88" "99.73" "99.76")) "\n"
