@@ -17,20 +17,20 @@ RUN groupadd craft && \
 
 USER craft
 
-# install the CRAFT v3.1.3 distribution then run boot once to initialize it,
+# install the CRAFT v4.0.1 distribution then run boot once to initialize it,
 # then once more to download the dependencies for the CRAFT project
 RUN cd /home/craft && \
-    wget https://github.com/UCDenver-ccp/CRAFT/archive/v3.1.3.tar.gz && \
-    tar -xzf v3.1.3.tar.gz && \
-    rm v3.1.3.tar.gz && \
-    cd /home/craft/CRAFT-3.1.3 && \
+    wget https://github.com/UCDenver-ccp/CRAFT/archive/v4.0.1.tar.gz && \
+    tar -xzf v4.0.1.tar.gz && \
+    rm v4.0.1.tar.gz && \
+    cd /home/craft/CRAFT-4.0.1 && \
     boot -h && \
     boot dependency -h
 
 # build annotation files required for evaluations
 # 1. build CoNLL-Coref 2011/12 formatted files for the coreference annotations
 # 2. build bionlp formatted files for concept annotations
-RUN cd /home/craft/CRAFT-3.1.3 && \
+RUN cd /home/craft/CRAFT-4.0.1 && \
     boot part-of-speech coreference convert -i -o /home/craft/eval-data/coreference/conllcoref && \
     boot concept -t CHEBI convert -b -o /home/craft/eval-data/concept/bionlp/chebi && \
     boot concept -t CHEBI -x convert -b -o /home/craft/eval-data/concept/bionlp/chebi_ext && \

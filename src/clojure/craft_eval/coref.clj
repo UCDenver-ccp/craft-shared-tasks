@@ -12,13 +12,13 @@
 (defn extract-coref-results-from-string [results-str metric]
       "extract coreference results from log output (most likely slurped from a log file)."
       (map (fn [m] (let [[match mention-recall-num mention-recall-den mention-precision-num mention-precision-den coref-recall-num coref-recall-den coref-precision-num coref-precision-den document-id] m]
-                        (vector document-id {(keyword (str metric "-mention-tp")) (Integer/parseInt mention-precision-num)
-                                             (keyword (str metric "-mention-fp")) (- (Integer/parseInt mention-precision-den) (Integer/parseInt mention-precision-num))
-                                             (keyword (str metric "-mention-fn")) (- (Integer/parseInt mention-recall-den) (Integer/parseInt mention-recall-num))
-                                             (keyword (str metric "-coref-tp"))   (Integer/parseInt coref-precision-num)
-                                             (keyword (str metric "-coref-fp"))   (- (Integer/parseInt coref-precision-den) (Integer/parseInt coref-precision-num))
-                                             (keyword (str metric "-coref-fn"))   (- (Integer/parseInt coref-recall-den) (Integer/parseInt coref-recall-num))})))
-           (re-seq #"(?m)^Identification of Mentions: Recall: \((\d+) / (\d+)\) [\d\.]+%\tPrecision: \((\d+) / (\d+)\) [\d\.]+%\tF1: [\d\.]+%\n-+\nCoreference: Recall: \((\d+) / (\d+)\) [\d\.]+%\tPrecision: \((\d+) / (\d+)\) [\d\.]+%\tF1: [\d\.]+%\n-+\n-+ end .*/(\d+)\.conll"
+                     (vector document-id {(keyword (str metric "-mention-tp")) (Float/parseFloat mention-precision-num)
+                                          (keyword (str metric "-mention-fp")) (- (Integer/parseInt mention-precision-den) (Float/parseFloat mention-precision-num))
+                                          (keyword (str metric "-mention-fn")) (- (Integer/parseInt mention-recall-den) (Float/parseFloat mention-recall-num))
+                                          (keyword (str metric "-coref-tp"))   (Float/parseFloat coref-precision-num)
+                                          (keyword (str metric "-coref-fp"))   (- (Integer/parseInt coref-precision-den) (Float/parseFloat coref-precision-num))
+                                          (keyword (str metric "-coref-fn"))   (- (Integer/parseInt coref-recall-den) (Float/parseFloat coref-recall-num))})))
+           (re-seq #"(?m)^Identification of Mentions: Recall: \(([\d\.]+) / (\d+)\) [\d\.]+%\tPrecision: \(([\d\.]+) / (\d+)\) [\d\.]+%\tF1: [\d\.]+%\n-+\nCoreference: Recall: \(([\d\.]+) / (\d+)\) [\d\.]+%\tPrecision: \(([\d\.]+) / (\d+)\) [\d\.]+%\tF1: [\d\.]+%\n-+\n-+ end .*/(\d+)\.conll"
                    results-str)))
 
 
