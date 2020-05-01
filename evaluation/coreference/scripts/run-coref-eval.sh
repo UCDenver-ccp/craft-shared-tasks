@@ -55,8 +55,8 @@ if [ ${ALLOW_PARTIAL} = "true" ]; then
     LOG_FILE=${OUTPUT_DIRECTORY}/${METRIC}.allow_partial.log
 fi
 
-for filename in ${GOLD_DIRECTORY}/*.conll; do
+for filename in ${INPUT_DIRECTORY}/*.conll; do
     echo "Evaluating ${filename}"
-    perl ${SCORER_DIRECTORY}/scorer.pl ${METRIC} ${filename} ${INPUT_DIRECTORY}/$(basename $filename) ${ALLOW_PARTIAL}
+    perl ${SCORER_DIRECTORY}/scorer.pl ${METRIC} ${GOLD_DIRECTORY}/$(basename $filename) ${filename} ${ALLOW_PARTIAL}
     echo "------------------ end ${filename}"
 done > ${LOG_FILE}
