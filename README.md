@@ -1,11 +1,13 @@
 # Docker image versions
 
-Sample commands in the wiki use an `[DOCKER_IMAGE]` variable. When running these commands, the variable should be replaced by one of the images versions described below.
+Please see the [README](https://github.com/UCDenver-ccp/craft-shared-tasks/blob/master/README.md) for information on which Docker image `[VERSION]` to use.
 
-## ucdenverccp/craft-eval:3.1.3_0.1.2
+Sample `docker` commands in the wiki use an `[VERSION]` variable. When running these commands, the variable should be replaced by one of the images versions described below.
+
+## VERSION = 3.1.3_0.1.2
 The `ucdenverccp/craft-eval:3.1.3_0.1.2` image was provided to participants during the 2019 CRAFT Shared Task to allow them to evaluate their systems during the development phase. This image contains version 3.1.3 of the CRAFT corpus, which is comprised of the 67 articles that were present in the initial public release of CRAFT.
 
-## ucdenverccp/craft-eval:4.0.1_0.1.2
+## VERSION = 4.0.1_0.1.2
 The `ucdenverccp/craft-eval:4.0.1_0.1.2` image was created after completion of the 2019 CRAFT Shared Task. It contains version 4.0.1 of the CRAFT corpus, which is comprised of all 97 articles; the 67 articles in the initial public release + the 30 reserved articles used to evaluate systems in the 2019 CRAFT Shared Task.
 
 # CRAFT shared task evaluation
