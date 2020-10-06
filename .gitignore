@@ -13,3 +13,7 @@ pom.xml.asc
 .idea/
 *.iml
 .DS_Store
+.classpath
+.factorypath
+.project
+.settings/
