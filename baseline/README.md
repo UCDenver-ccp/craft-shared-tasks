@@ -4,7 +4,7 @@ For the CRAFT Shared Task 2019, the [Berkeley coreference resolution system](htt
 
 ## Dependencies
 
-- [Docker](https://www.docker.com/) -- Code and scripts have been packaged in a [Docker container](https://hub.docker.com/repository/docker/ucdenverccp/craft-shared-task-2019-cr-baseline)
+- [Docker](https://www.docker.com/) -- Code and scripts have been packaged in a [Docker container](https://hub.docker.com/r/ucdenverccp/craft-shared-task-2019-cr-baseline)
 - [The Berkeley coreference system and accompanying model files](http://nlp.cs.berkeley.edu/projects/coref.shtml)
 
 ## Reproducing the CRAFT Shared Task 2019 CR Task Baseline
