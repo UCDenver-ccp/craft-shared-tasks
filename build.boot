@@ -1,12 +1,12 @@
 (def project 'edu.ucdenver.ccp/craft-eval)
-(def version "0.1.2")
+(def version "0.2.0")
 
 (set-env! :resource-paths #{"resources"}
           :source-paths #{"test/clojure" "src/clojure" "src/java"}
           :dependencies '[[org.clojure/clojure "RELEASE"]
                           [adzerk/boot-test "RELEASE" :scope "test"]
                           [test-with-files "0.1.1" :scope "test"]
-                          [edu.ucdenver.ccp/file-conversion-onejar "0.2.2"]
+                          [edu.ucdenver.ccp/file-conversion-onejar "0.3.0"]
                           [edu.ucdenver.ccp/ccp-nlp-evaluation-onejar "3.5.2"]]
           :repositories #(conj % ["bionlp" {:url "https://svn.code.sf.net/p/bionlp/code/repo/"}]))
 
@@ -33,7 +33,7 @@
   repl {:init-ns 'craft-eval.coref}
   jar {:file (str "craft-eval-" version "-standalone.jar")})
 
-(def craft-version "4.0.1")
+(def craft-version "5.0.0")
 
 (deftask build
          "Build the project locally as a JAR."

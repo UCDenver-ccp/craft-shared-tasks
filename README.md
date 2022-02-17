@@ -4,11 +4,16 @@ Please see the [README](https://github.com/UCDenver-ccp/craft-shared-tasks/blob/
 
 Sample `docker` commands in the wiki use an `[VERSION]` variable. When running these commands, the variable should be replaced by one of the images versions described below.
 
-## VERSION = 3.1.3_0.1.2
-The `ucdenverccp/craft-eval:3.1.3_0.1.2` image was provided to participants during the 2019 CRAFT Shared Task to allow them to evaluate their systems during the development phase. This image contains version 3.1.3 of the CRAFT corpus, which is comprised of the 67 articles that were present in the initial public release of CRAFT.
+## VERSION = 5.0.0_0.2.0
+The `ucdenverccp/craft-eval:5.0.0_0.2.0` image incorporates CRAFT v5.0.0 which includes concept annotations to the Mondo Disease Ontology (MONDO) for all 97 articles.
 
 ## VERSION = 4.0.1_0.1.2
 The `ucdenverccp/craft-eval:4.0.1_0.1.2` image was created after completion of the 2019 CRAFT Shared Task. It contains version 4.0.1 of the CRAFT corpus, which is comprised of all 97 articles; the 67 articles in the initial public release + the 30 reserved articles used to evaluate systems in the 2019 CRAFT Shared Task.
+
+## VERSION = 3.1.3_0.1.2
+The `ucdenverccp/craft-eval:3.1.3_0.1.2` image was provided to participants during the 2019 CRAFT Shared Task to allow them to evaluate their systems during the development phase. This image contains version 3.1.3 of the CRAFT corpus, which is comprised of the 67 articles that were present in the initial public release of CRAFT.
+
+
 
 # CRAFT shared task evaluation
 This repository hosts code and scripts used for evaluation of the [CRAFT Shared Tasks 2019](https://sites.google.com/view/craft-shared-task-2019/home).

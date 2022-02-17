@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -46,6 +47,8 @@ public class CraftConceptEvaluationUtil {
 		GO_CC_EXT("GO+GO_CC_extensions.obo"),
 		GO_MF("GO_MF_stub.obo"),
 		GO_MF_EXT("GO_MF_stub+GO_MF_extensions.obo"),
+		MONDO_WITH_GENOTYPE_ANNOTATIONS("mondo.owl"),
+		MONDO_WITHOUT_GENOTYPE_ANNOTATIONS("mondo.owl"),
 		MOP("MOP.obo"),
 		MOP_EXT("MOP+extensions.obo"),
 		NCBITAXON("NCBITaxon.obo"),
@@ -71,7 +74,16 @@ public class CraftConceptEvaluationUtil {
 			if (base.equals("NCBITAXON")) {
 				base = "NCBITaxon";
 			}
+			if (this.name().contains("MONDO")) {
+				base = "MONDO";
+			}
 			String secondLevel = (this.name().contains("_EXT")) ? base + "+extensions" : base;
+			if (this == MONDO_WITHOUT_GENOTYPE_ANNOTATIONS) {
+				secondLevel = "MONDO_without_genotype_annotations";
+			} else if (this == MONDO_WITH_GENOTYPE_ANNOTATIONS) {
+				secondLevel = "MONDO_with_genotype_annotations";
+			}
+
 			return "concept-annotation" + File.separator + base + File.separator + secondLevel;
 		}
 
