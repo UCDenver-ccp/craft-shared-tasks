@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.2.0 - 2022-02-16
+* Makes use of CRAFT v5.0.0 which now includes annotations to the Mondo Disease Ontology
+
 ## 0.1.2 - 2019-07-03
 * Incorporated validation of coreference input files into the evaluation process. Validation is primarily focused on properly formatted discontinuous spans but also checks for annotations that are members of mulitple identity chains and redundant annotations within an identity chain (both are prohibited). The adoption of v0.2.2 of the file-conversion project (see https://github.com/UCDenver-ccp/file-conversion/blob/master/CHANGES.md) addresses the concerns raised in https://github.com/UCDenver-ccp/craft-shared-tasks/issues/1
 * Fixed minor bug in a unit test so that the correct function is now called
