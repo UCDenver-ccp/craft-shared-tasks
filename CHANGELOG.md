@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.3.0 - 2022-08-09
+* Makes use of CRAFT v5.0.2 which includes some missing XML files for the MONDO annotations as well as a fix to the COREF file output format.
+
 ## 0.2.0 - 2022-02-16
 * Makes use of CRAFT v5.0.0 which now includes annotations to the Mondo Disease Ontology
 

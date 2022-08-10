@@ -17,7 +17,7 @@ RUN groupadd craft && \
 
 USER craft
 
-ENV CRAFT_VERSION 5.0.0
+ENV CRAFT_VERSION 5.0.2
 # install the CRAFT v${CRAFT_VERSION} distribution then run boot once to initialize it,
 # then once more to download the dependencies for the CRAFT project
 RUN cd /home/craft && \
